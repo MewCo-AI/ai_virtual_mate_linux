@@ -1,6 +1,6 @@
 beautifulsoup4
 cn2an
-edge-tts
+edge-tts==7.2.1
 face_recognition
 flask
 homeassistant_api
