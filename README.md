@@ -2,7 +2,7 @@
 
 ![GitHub license](https://img.shields.io/github/license/swordswind/ai_virtual_mate_linux?style=flat-square) ![GitHub stars](https://img.shields.io/github/stars/swordswind/ai_virtual_mate_linux?style=flat-square) ![GitHub forks](https://img.shields.io/github/forks/swordswind/ai_virtual_mate_linux?style=flat-square)
 
-**枫云AI虚拟伙伴Linux版v3.0(Aivmate LX3)**是一款由MewCo-AI团队开源的支持迷你小盒子/四轮机器人/四足机器人三形态的AI伙伴，旨在为Linux用户打造一个功能丰富、高度可定制的虚拟伙伴。通过整合多种人工智能技术，实现声纹识别语音交互、多模态图像识别、多Agent智能体、Live2D/MMD 3D/VRM 3D角色展示、主动感知对话、机器人控制等功能。
+**枫云AI虚拟伙伴Linux版v3.0**(Aivmate LX3)是一款由MewCo-AI团队开源的支持迷你小盒子/四轮机器人/四足机器人三形态的AI伙伴，旨在为Linux用户打造一个功能丰富、高度可定制的虚拟伙伴。通过整合多种人工智能技术，实现声纹识别语音交互、多模态图像识别、多Agent智能体、Live2D/MMD 3D/VRM 3D角色展示、主动感知对话、机器人控制等功能。
 
 ![](data/image/logo.png)
 
