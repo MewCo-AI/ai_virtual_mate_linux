@@ -6,7 +6,7 @@ wifi = pywifi.PyWiFi()
 try:
     iface = wifi.interfaces()[net_num]
 except:
-    print("未连接无线网卡或网卡编号设置错误，可前往本文件wifi_test.py第4行修改net_num")
+    print("未连接无线网卡或网卡编号设置错误，可前往本文件wifi_test.py第4行修改net_num(该情况不影响正常使用)")
 
 
 def get_wifi_signal_strength():
@@ -23,11 +23,11 @@ def get_wifi_signal_strength():
                 signal_percent = 0
             else:
                 signal_percent = int((signal - (-95)) / ((-25) - (-95)) * 100)
-            print(f"信号强度为{signal_percent}%")
+            print(f"信号强度{signal_percent}%")
         else:
-            print("WiFI已开启，但未连接")
+            print("WiFi已开启，但未连接")
     except:
-        print("WiFI未开启")
+        print("WiFi未开启")
 
 
 get_wifi_signal_strength()

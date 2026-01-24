@@ -1,4 +1,4 @@
-from sport import *
+from sport_ugv import *
 
 run_ges = 0
 
@@ -17,18 +17,30 @@ def run_gesture():  # 手势控制
             middle_tip_x, middle_tip_y = middle_tip.x, middle_tip.y
             # 判断手势并执行操作
             if index_tip_y < thumb_tip_y and middle_tip_y < thumb_tip_y:  # 张开左手全部手指，面对镜头
-                emergency_stop()
+                emergency_stop_ugv()
             else:
                 if abs(index_tip_x - thumb_tip_x) > abs(index_tip_y - thumb_tip_y):
                     if index_tip_x > thumb_tip_x:
-                        turn_right(rotate_gear)
+                        if embody_ai_mode == "ugv":
+                            turn_right_ugv(ugv_rotate_gear)
+                        else:
+                            turn_right_quad()
                     else:
-                        turn_left(rotate_gear)
+                        if embody_ai_mode == "ugv":
+                            turn_left_ugv(ugv_rotate_gear)
+                        else:
+                            turn_left_quad()
                 else:
                     if index_tip_y > thumb_tip_y:
-                        down_robot(move_gear)
+                        if embody_ai_mode == "ugv":
+                            down_robot_ugv(ugv_move_gear)
+                        else:
+                            down_robot_quad()
                     else:
-                        up_robot(move_gear)
+                        if embody_ai_mode == "ugv":
+                            up_robot_ugv(ugv_move_gear)
+                        else:
+                            up_robot_quad()
 
     global run_ges
     mp_hands = mp.solutions.hands  # 初始化MediaPipe手部检测模块
@@ -50,6 +62,8 @@ def run_gesture():  # 手势控制
     cap.release()
 
 
+# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
 def close_gesture():  # 关闭手势控制
     global run_ges
     run_ges = 0
+    return "手势操控已关闭"

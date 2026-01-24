@@ -1,9 +1,9 @@
 from live2d import *
 from mmd import *
-from web_control import *
+from vrm import *
 
 
-def sensevoice_main():  # 语音交互主线程
+def sense_voice_main():  # 语音交互主线程
     from asr import recognize_audio, record_audio
     while True:
         try:
@@ -23,7 +23,7 @@ def sensevoice_main():  # 语音交互主线程
                     if pg.mixer.music.get_busy():
                         time.sleep(0.1)
                     else:
-                        say_text = say_text.replace(wake_word, "")
+                        say_text = say_text.replace(wake_word + "，", "").replace(wake_word, "")
                         print(f"{username}：{say_text}")
                         chat_preprocess(say_text)
             else:
@@ -34,7 +34,7 @@ def sensevoice_main():  # 语音交互主线程
 
 def text_chat():  # 文本聊天线程
     while True:
-        pg.quit()
+        stop_tts()
         msg = ""
         try:
             msg = input(f"{username}：")
@@ -47,6 +47,7 @@ def text_chat():  # 文本聊天线程
         chat_preprocess(msg)
 
 
+# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
 def run_ase():  # 主动感知对话线程
     def ase_chat(msg):
         print(f"{mate_name}主动感知并发起了聊天")
@@ -67,7 +68,7 @@ def run_ase():  # 主动感知对话线程
         ase_chat("请你完整阅读这些新闻，然后选感兴趣的和我聊聊天，不能选择明星类、负面或令人感到不安的新闻。")
 
     def ase_weather():
-        ase_chat(f"请你查看下列气象信息，和我发起话题聊聊天，例如提出生活或出行建议：{get_weather()}")
+        ase_chat(f"请你结合天气信息，和我发起话题聊聊天，例如提出生活或出行建议")
 
     def ase_vlm_cam():
         ase_chat("请你读取你看到的摄像头内容，务必根据其中的内容和我聊聊天。")
@@ -79,20 +80,30 @@ def run_ase():  # 主动感知对话线程
         time.sleep(random.randint(180, 600))
         with open("data/db/current_ase.txt", "r", encoding="utf-8") as f:
             current_ase = f.read()
-        if current_ase == "ON":
+        if current_ase == "on":
             ase_function = random.choice([ase_hello, ase_news, ase_weather, ase_vlm_cam, ase_context])
             print(ase_function)
             ase_function()
 
 
+def play_welcome():
+    pg.mixer.init()
+    pg.mixer.Sound("data/audio/welcome.mp3").play()
+    if welcome_voice_switch == "on":
+        time.sleep(2)
+        play_tts(f"哈喽！{username}，我是{mate_name}，{get_lan_url()}")
+
+
 Thread(target=run_state_web).start()
 Thread(target=run_live2d).start()
 Thread(target=run_mmd).start()
-Thread(target=run_control_web).start()
-Thread(target=sensevoice_main).start()
+Thread(target=run_vrm).start()
+Thread(target=run_control_web_ugv).start()
+Thread(target=run_control_web_quad).start()
+Thread(target=sense_voice_main).start()
 #Thread(target=text_chat).start()
 Thread(target=run_ase).start()
-pg.mixer.init()
-pg.mixer.Sound("data/audio/welcome.mp3").play()
+Thread(target=run_settings_web).start()
+Thread(target=play_welcome).start()
 while True:
     time.sleep(1)

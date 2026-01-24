@@ -1,15 +1,19 @@
-import re
-import socket
+import time
 import cv2
 import psutil
 import pywifi
+print("正在加载人脸识别模块...")
 import face_recognition as fr
+print("正在加载手势识别模块...")
 import mediapipe as mp
+import numpy as np
 from base64 import b64decode
 from xml.etree import ElementTree
 from homeassistant_api import Client as hClient
 from ping3 import ping
+print("正在加载物体识别模块...")
 from ultralytics import YOLO
+from zai import ZhipuAiClient
 from websearch import search
 from tts import *
 
@@ -17,15 +21,31 @@ wifi = pywifi.PyWiFi()
 try:
     iface = wifi.interfaces()[net_num]
 except:
-    print("未连接无线网卡或网卡编号设置错误，可前往config.py修改net_num")
+    print("未连接无线网卡或网卡编号设置错误，可前往系统设置修改(该情况不影响正常使用)")
 pose, yolo_model = None, None
 
 
 def function_llm(fc_prompt, msg):  # 函数大语言模型
-    client = OpenAI(base_url=glm_url, api_key=glm_key)
-    completion = client.chat.completions.create(
-        model=glm_llm_model, messages=[{"role": "user", "content": msg}, {"role": "system", "content": fc_prompt}])
-    return completion.choices[0].message.content
+    fc_prompt = fc_prompt + "/no_think"
+    messages = [{"role": "system", "content": fc_prompt}, {"role": "user", "content": msg}]
+    if prefer_llm == "ZhipuAI":
+        client = ZhipuAiClient(api_key=glm_key)
+        completion = client.chat.completions.create(model=glm_llm_model, messages=messages,
+                                                    thinking={"type": "disabled"})
+    elif prefer_llm == "OpenAI":
+        client = OpenAI(base_url=openai_url, api_key=openai_key)
+        completion = client.chat.completions.create(model=openai_llm_model, messages=messages)
+    elif prefer_llm == "LM Studio":
+        client = OpenAI(base_url=lmstudio_url, api_key="lm-studio")
+        completion = client.chat.completions.create(model="", messages=messages)
+    elif prefer_llm == "Ollama":
+        client = OpenAI(base_url=ollama_url, api_key="ollama")
+        completion = client.chat.completions.create(model=ollama_llm_model, messages=messages)
+    else:
+        return f"[{prefer_llm}未适配FC函数，可选择其他对话模型]"
+    res = completion.choices[0].message.content
+    res = res.split("</think>")[-1].strip()
+    return res.replace("#", "").replace("*", "").strip()
 
 
 def get_news(msg):  # 新闻查询
@@ -59,20 +79,32 @@ def get_news(msg):  # 新闻查询
         else:
             news_result = get_news_from_zxw("https://www.chinanews.com.cn/rss/society.xml")
         answer = function_llm(f"{prompt}。请你根据新闻信息和我对话",
-            f"{news_result}。上面是完整的新闻热搜，请你根据这些热搜，分析并发表你的观点见解并回答我的问题，我的问题是：{msg}？回答不要超过100个字")
+                              f"{news_result}。上面是完整的新闻热搜，请你根据这些热搜，分析并发表你的观点见解并回答我的问题，我的问题是：{msg}？回答不要超过100个字")
         return answer
     except:
         return "新闻服务维护中，请一段时间后再试"
 
 
-def get_weather():  # 天气查询
+def get_weather(msg):
+    def extract_weather_city_name(msg2):  # 提取题天气城市名称
+        return function_llm(
+            "你是一个专业的城市名称提取器，需要把用户输入信息中想查询的城市名称提取出来。仅需输出提取后的城市名称，不要输出其他内容",
+            f"下面是用户的消息，请你对其中的城市名称进行提取：{msg2}。仅需输出提取后的城市名称，不要输出其他内容。如果用户输入不包含城市名称，则输出{weather_city}")
+
     def get_weather_domain():
         return b64decode('bG9saW1p').decode('utf-8')
 
-    api = f"https://api.{get_weather_domain()}.cn/API/weather/?city={weather_city}"
     try:
+        input_city = extract_weather_city_name(msg)
+        api = f"https://api.{get_weather_domain()}.cn/API/weather/?city={input_city}"
         res = rq.get(api).json()
-        return f"{weather_city}{res['data']['weather']}，现在{res['data']['current']['weather']}，气温{res['data']['current']['temp']}度，湿度{res['data']['current']['humidity']}，空气质量指数{res['data']['current']['air']}，{res['data']['current']['wind']}{res['data']['current']['windSpeed']}"
+        try:
+            weather_result = f"{input_city}{res['data']['weather']}，现在{res['data']['current']['weather']}，气温{res['data']['current']['temp']}度，湿度{res['data']['current']['humidity']}，空气质量指数{res['data']['current']['air']}，{res['data']['current']['wind']}{res['data']['current']['windSpeed']}"
+        except:
+            weather_result = "气象第三方服务异常，请检查城市名或一段时间后试，请提醒用户本第三方服务仅支持查询国内城市天气"
+        return function_llm(
+            "请你扮演一名专业的天气观察员和我对话，阅读我给你的天气信息，并简要地回答我的问题，输出为一句话，不要分段，不要用MarkDown格式",
+            f"{weather_result}。上面是天气信息，请你根据天气信息，回答我的问题，我的问题是：{msg}？回答不要超过100个字")
     except:
         return "气象第三方服务异常，请检查城市名或一段时间后试"
 
@@ -92,30 +124,29 @@ def get_wifi_info():  # WiFi强度查询
             else:
                 signal_percent = int((signal - (-95)) / ((-25) - (-95)) * 100)
             return f"信号强度为{signal_percent}%"
-        return "WiFI已开启，但未连接"
+        return "WiFi已开启，但未连接"
     except:
-        return "WiFI未开启"
+        return "WiFi未开启"
 
 
-def get_net_info():  # 网络延迟查询
+def get_lan_info():  # 外部网络延迟查询
     try:
-        net_delay = ping("223.5.5.5", timeout=10, unit="ms")
-        return f"网络延迟{int(net_delay)}毫秒"
+        net_delay = ping(router_ip, timeout=3, unit="ms")
+        return f"延迟{int(net_delay)}毫秒"
+    except:
+        return "延迟-毫秒"
+
+
+def get_wan_info():  # 外部网络延迟查询
+    try:
+        net_delay = ping("119.29.29.29", timeout=3, unit="ms")
+        return f"延迟{int(net_delay)}毫秒"
     except:
         return "外部网络未连接"
 
 
 def get_lan_url():  # 局域网地址查询
-    def get_local_ip():
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(('223.5.5.5', 1))
-            ip = s.getsockname()[0]
-        except:
-            ip = '127.0.0.1'
-        return ip
-
-    lan_url = f"IP地址为{get_local_ip()}，2D角色网页端口{live2d_port}，3D角色端口{mmd_port}，3D动作端口网址为{mmd_port}/vmd"
+    lan_url = f"访问网址为{get_local_ip()}冒号{state_port}"
     return lan_url
 
 
@@ -124,7 +155,7 @@ def get_state():  # 系统状态查询
         temps = psutil.sensors_temperatures()
         temp = int(temps[next(iter(temps))][0].current)
     except:
-        temp = "未知"
+        temp = "-"
     state = f"温度{temp}度，处理器使用率{psutil.cpu_percent(interval=1)}%，内存使用率{psutil.virtual_memory().percent}%"
     return state
 
@@ -143,6 +174,7 @@ def ol_search(msg):  # 联网搜索
         return "联网搜索服务维护中，请一段时间后再试"
 
 
+# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
 def control_ha():  # Home Assistant控制
     try:
         client = hClient(f"{ha_api}/api/", ha_key)
@@ -175,13 +207,13 @@ def delete_face():  # 删除人脸
     files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
     jpg_files = [f for f in files if f.lower().endswith('.jpg')]
     if not jpg_files:
-        return
+        return "未找到人脸，无需删除"
     latest_file = max(jpg_files, key=lambda f: os.path.getmtime(os.path.join(folder_path, f)))
     os.remove(os.path.join(folder_path, latest_file))
     return "最新的人脸删除啦"
 
 
-def recog_face():  # 人脸识别
+def recognize_face():  # 人脸识别
     known_face_encodings = []  # 加载已知的人脸图像和对应的姓名
     known_face_names = []
     image_folder = "data/image/face"  # 遍历image文件夹中的所有图片
@@ -229,6 +261,7 @@ def check_yolo(obj, cap):  # 物体检测
     global yolo_model
     if yolo_model is None:
         yolo_model = YOLO('data/model/YOLO/yolo11n.pt')
+        #yolo_model = YOLO('E:/model/YOLO/yolo11n.pt')
     obj_dict = {"书本": "book", "手机": "cell phone", "杯子": "cup", "剪刀": "scissors", "苹果": "apple",
                 "橙子": "orange", "香蕉": "banana"}
     obj = obj_dict.get(obj, obj)
@@ -281,19 +314,23 @@ def switch_asr_mode():  # 切换语音模式
         with open("data/db/current_asr.txt", "w", encoding="utf-8") as f:
             f.write("RealTime")
         return "已切换为实时语音模式"
+    else:
+        return "语音识别模式设置错误，请前往系统设置修改"
 
 
 def switch_ase_mode():  # 切换主动对话模式
     with open("data/db/current_ase.txt", "r", encoding="utf-8") as f:
         current_ase = f.read()
-    if current_ase == "ON":
+    if current_ase == "on":
         with open("data/db/current_ase.txt", "w", encoding="utf-8") as f:
-            f.write("OFF")
+            f.write("off")
         return "已关闭主动感知对话"
-    elif current_ase == "OFF":
+    elif current_ase == "off":
         with open("data/db/current_ase.txt", "w", encoding="utf-8") as f:
-            f.write("ON")
+            f.write("on")
         return "已开启主动感知对话"
+    else:
+        return "主动感知对话设置错误，请前往系统设置修改"
 
 
 with open("data/db/current_asr.txt", "w", encoding="utf-8") as file:

@@ -3,7 +3,7 @@ import time
 from threading import Thread
 from serial import Serial
 
-radar_port = "/dev/ttyACM0"
+ugv_radar_port = "/dev/ttyACM0"
 
 
 def parse_data(data):  # 定义一个函数来解析数据包
@@ -26,10 +26,10 @@ def parse_data(data):  # 定义一个函数来解析数据包
 def radar_detect():
     global last_angle
     try:
-        ser = Serial(radar_port, 460800, timeout=5)
+        ser = Serial(ugv_radar_port, 460800, timeout=5)
     except Exception as e:
         ser = None
-        print("激光雷达未连接或串口编号设置错误，请修改radar_port，错误详情：", e)
+        print("激光雷达未连接或串口编号设置错误，请修改ugv_radar_port，错误详情：", e)
         os.kill(os.getpid(), 15)
     while True:
         try:

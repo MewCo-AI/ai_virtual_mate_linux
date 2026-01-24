@@ -1,134 +1,157 @@
 import asyncio
+import glob
 import os
-import time
+import re
+print("正在加载语音合成模块...")
 import edge_tts
-import librosa
+import sherpa_onnx
 import pygame as pg
 import requests as rq
 import soundfile as sf
-import numpy as np
-from threading import Thread
-from kokoro_onnx import Kokoro
-from misaki import zh
+print("正在加载大模型模块...")
 from openai import OpenAI
-from config import *
+from web_settings import *
 
+#vits_target_dir = "E:/model/TTS"
+vits_target_dir = "data/model/TTS"
+vits_model_dir = f"{vits_target_dir}/{vits_model_name}"
+vits_tts = None
+try:
+    vits_model_path = glob.glob(os.path.join(vits_model_dir, "*.onnx"))[0]
+    vits_tokens_path = f"{vits_model_dir}/tokens.txt"
+    vits_data_dir = f"{vits_model_dir}/espeak-ng-data"
+    vits_tts_config = sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(
+        vits=sherpa_onnx.OfflineTtsVitsModelConfig(
+            model=vits_model_path, tokens=vits_tokens_path, data_dir=vits_data_dir), provider="cpu",
+        num_threads=os.cpu_count()))
+except Exception as e1:
+    print(f"VITS模型加载错误，详情：{e1}")
 voice_path = 'data/cache/cache_voice'
-wav_path = 'data/cache/cache_voice.wav'
-kokoro = None
-g2p = zh.ZHG2P()
+play_tts_flag = 0
 
 
-def play_live2d(path):  # 播放Live2D对口型
-    try:
-        x, sr = librosa.load(path, sr=8000)
-        x = x - min(x)
-        x = x / max(x)
-        x = np.log(x) + 1
-        x = x / max(x) * 1.2
-        s_time = time.time()
-        for _ in range(int(len(x) / 800)):
-            it = x[int((time.time() - s_time) * 8000) + 1]
-            if it < 0:
-                it = 0
-            with open("data/cache/cache.txt", "w") as cache_file:
-                cache_file.write(str(float(it)))
-            time.sleep(0.1)
-    except:
-        pass
-    time.sleep(0.1)
-    with open("data/cache/cache.txt", "w") as cache_file:
-        cache_file.write("0")
-
-
-def play_voice(path):  # 播放语音
-    pg.mixer.init()
-    pg.mixer.music.load(path)
-    pg.mixer.music.play()
-    Thread(target=play_live2d, args=(path,)).start()
-    while pg.mixer.music.get_busy():
-        pg.time.Clock().tick(1)
-    pg.mixer.music.stop()
+def stop_tts():
+    global play_tts_flag
     pg.quit()
+    play_tts_flag = 0
 
 
 def play_tts(text):  # 语音合成
-    async def ms_edge_tts():  # 使用edge_tts进行文本到语音的转换并保存到文件
-        communicate = edge_tts.Communicate(text, voice=edge_speaker, rate=edge_rate, pitch=edge_pitch)
+    global play_tts_flag
+    play_tts_flag = 1
+
+    def play_voice():  # 播放语音
+        pg.mixer.init()
+        try:
+            pg.mixer.music.load(voice_path)
+            pg.mixer.music.play()
+            while pg.mixer.music.get_busy() and play_tts_flag == 1:
+                pg.time.Clock().tick(1)
+            pg.mixer.music.stop()
+        except:
+            pass
+        pg.quit()
+
+    def split_text(text2):
+        segments2 = re.split(r'([\n:：!！?？;；。])', text2)
+        combined = []
+        for i in range(0, len(segments2), 2):
+            if i + 1 < len(segments2):
+                combined.append(segments2[i] + segments2[i + 1])
+            elif segments2[i].strip():  # 处理最后可能剩余的文本部分
+                combined.append(segments2[i])
+        return [seg.strip() for seg in combined if seg.strip()]  # 过滤空字符串
+
+    async def ms_edge_tts(segment2):  # 带分段参数的edge_tts处理
+        communicate = edge_tts.Communicate(segment2, voice=edge_speaker, rate=edge_rate, pitch=edge_pitch)
         await communicate.save(voice_path)
 
-    text = text.split("</think>")[-1].strip()
-    if prefer_tts == "edge-tts":
-        try:
-            asyncio.run(ms_edge_tts())
-            play_voice(voice_path)
-        except:
-            print(f"edge-tts服务拥挤")
-    elif prefer_tts == "GPT-SoVITS":
-        url = f'{gsv_api}/?text={text}&text_language=zh'
-        try:
-            res = rq.get(url)
-            with open(voice_path, 'wb') as f:
-                f.write(res.content)
-            play_voice(voice_path)
-        except Exception as e:
-            print(f"GPT-SoVITS整合包API服务器未开启，错误详情：{e}")
-    elif prefer_tts == "CosyVoice":
-        url = f'{cosy_api}/cosyvoice/?text={text}'
-        try:
-            res = rq.get(url)
-            with open(voice_path, 'wb') as f:
-                f.write(res.content)
-            play_voice(voice_path)
-        except Exception as e:
-            print(f"CosyVoice整合包API服务器未开启，错误详情：{e}")
-    elif prefer_tts == "Kokoro-TTS":
-        try:
-            run_kokoro(text)
-            play_voice(wav_path)
-        except Exception as e:
-            print(f"Kokoro-TTS出错，错误详情：{e}")
-    elif prefer_tts == "Spark-TTS":
-        url = f'{spark_api}/spark/?text={text}'
-        try:
-            res = rq.get(url)
-            with open(voice_path, 'wb') as f:
-                f.write(res.content)
-            play_voice(voice_path)
-        except Exception as e:
-            print(f"Spark-TTS整合包API服务器未开启，错误详情：{e}")
-    elif prefer_tts == "Index-TTS":
-        url = f'{index_api}/indextts/?text={text}'
-        try:
-            res = rq.get(url)
-            with open(voice_path, 'wb') as f:
-                f.write(res.content)
-            play_voice(voice_path)
-        except Exception as e:
-            print(f"Index-TTS整合包API服务器未开启，错误详情：{e}")
-    elif prefer_tts == "CustomTTS":
-        try:
-            custom_tts(text)
-            play_voice(voice_path)
-        except Exception as e:
-            print(f"自定义TTS API配置错误，错误详情：{e}")
-    elif prefer_tts == "espeak":
-        text = text.replace("\n", "")
-        try:
-            os.system(f"espeak -v zh+f3 {text}")
-        except:
-            print("您的机器未安装espeak，请执行安装命令\nsudo apt install espeak")
+    processed_text = text.split("</think>")[-1].strip()
+    processed_text = re.sub(r'[(（].*?[)）]', '', processed_text)
+    if stream_tts_switch == "on":
+        segments = split_text(processed_text)
+        if not segments:  # 确保至少有一个分段
+            segments = [processed_text]
+    else:
+        segments = [processed_text]  # 不分段，使用完整文本
+    try:
+        for segment in segments:
+            if play_tts_flag != 1:
+                break
+            if prefer_tts == "edge-tts":
+                try:
+                    asyncio.run(ms_edge_tts(segment))
+                    play_voice()
+                except Exception as e:
+                    print(f"edge-tts服务拥挤，错误详情：{e}")
+            elif prefer_tts == "VITS":
+                try:
+                    tts_vits(segment)
+                    play_voice()
+                except Exception as e:
+                    print(f"内置VITS服务拥挤，错误详情：{e}")
+            elif prefer_tts == "GPT-SoVITS":
+                url = f'{gsv_api}/tts?text={segment}&text_lang={gsv_lang}&prompt_text={gsv_prompt}&prompt_lang={gsv_prompt_lang}&ref_audio_path={gsv_ref_audio_path}'
+                try:
+                    res = rq.get(url)
+                    with open(voice_path, 'wb') as f:
+                        f.write(res.content)
+                    play_voice()
+                except Exception as e:
+                    print(f"GPT-SoVITS整合包API服务器未开启，错误详情：{e}")
+            elif prefer_tts == "CosyVoice":
+                url = f'{cosy_api}/cosyvoice/?text={segment}'
+                try:
+                    res = rq.get(url)
+                    with open(voice_path, 'wb') as f:
+                        f.write(res.content)
+                    play_voice()
+                except Exception as e:
+                    print(f"CosyVoice整合包API服务器未开启，错误详情：{e}")
+            elif prefer_tts == "Qwen-TTS":
+                url = f'{qwentts_api}/qwen_tts/?text={segment}'
+                try:
+                    res = rq.get(url)
+                    with open(voice_path, 'wb') as f:
+                        f.write(res.content)
+                    play_voice()
+                except Exception as e:
+                    print(f"Qwen-TTS整合包API服务器未开启，错误详情：{e}")
+            elif prefer_tts == "VoxCPM":
+                url = f'{voxcpm_api}/voxcpm/?text={segment}'
+                try:
+                    res = rq.get(url)
+                    with open(voice_path, 'wb') as f:
+                        f.write(res.content)
+                    play_voice()
+                except Exception as e:
+                    print(f"VoxCPM整合包API服务器未开启，错误详情：{e}")
+            elif prefer_tts == "Index-TTS":
+                url = f'{index_api}/indextts/?text={segment}'
+                try:
+                    res = rq.get(url)
+                    with open(voice_path, 'wb') as f:
+                        f.write(res.content)
+                    play_voice()
+                except Exception as e:
+                    print(f"Index-TTS整合包API服务器未开启，错误详情：{e}")
+            elif prefer_tts == "CustomTTS":
+                try:
+                    custom_tts(segment)
+                    play_voice()
+                except Exception as e:
+                    print(f"自定义TTS API配置错误，错误详情：{e}")
+    except Exception as e:
+        print(f"语音合成服务出错：{str(e)}")
 
 
-def run_kokoro(text):  # 本地Kokoro-TTS
-    global kokoro
-    model_path = "data/model/TTS/Kokoro-82M/kokoro-v1.0.fp16.onnx"
-    voice_list_path = "data/model/TTS/Kokoro-82M/voices-v1.0.bin"
-    if kokoro is None:
-        kokoro = Kokoro(model_path, voice_list_path)
-    phonemes, _ = g2p(text)
-    samples, sample_rate = kokoro.create(text=phonemes, voice=kokoro_speaker, speed=kokoro_speed, is_phonemes=True)
-    sf.write(wav_path, samples, sample_rate)
+# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+def tts_vits(text):
+    global vits_tts
+    if vits_tts is None:
+        vits_tts = sherpa_onnx.OfflineTts(vits_tts_config)
+    audio = vits_tts.generate(text, sid=0, speed=1.0)
+    sf.write(voice_path, audio.samples, samplerate=audio.sample_rate, subtype="PCM_16", format="wav")
 
 
 def custom_tts(text):

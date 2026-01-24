@@ -1,32 +1,22 @@
 beautifulsoup4
-cn2an
-edge-tts==7.2.1
+edge-tts
 face_recognition
 flask
 homeassistant_api
-jieba
-librosa
 lxml
 mediapipe
-misaki
-ollama
 openai
 opencv-python
-ordered_set
 ping3
 psutil
 pyaudio
 pygame
-pypinyin
 pyserial
 pywifi
 rapidocr_openvino
+sherpa_onnx
 soundfile
 ultralytics
-funasr_onnx==0.4.1
+zai-sdk
 
-#下述两个库需分别执行命令安装(命令行执行时去掉#号)
-#pip install kokoro_onnx==0.4.5
-#pip install numpy==1.26.4
-
-#sudo apt install cmake libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 espeak
+#sudo apt install cmake libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0
