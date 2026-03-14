@@ -213,7 +213,7 @@ def chat_preprocess(msg):  # 对话预处理
     return res
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 def chat_dify(msg):  # Dify知识库
     headers = {"Authorization": f"Bearer {dify_key}", "Content-Type": "application/json"}
     data = {"query": msg, "inputs": {}, "response_mode": "blocking", "user": username, "conversation_id": None}

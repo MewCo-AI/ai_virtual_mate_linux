@@ -82,7 +82,7 @@ def get_quad_cell_percent():
         return 0, 0
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 def get_quad_cell_percent_th():
     global quad_voltage, quad_battery_percent
     time.sleep(2)

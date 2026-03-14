@@ -538,7 +538,7 @@ vrm_web_template = '''
 '''
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 @app3.route('/')
 def index():
     return render_template_string(vrm_web_template, model_name=vrm_model_name)

@@ -577,7 +577,7 @@ state_web_html = """
 </html>"""
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 @app.route('/')
 def index():
     return render_template_string(state_web_html, mate_name=mate_name, username=username)

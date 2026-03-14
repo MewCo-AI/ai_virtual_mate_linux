@@ -174,7 +174,7 @@ def ol_search(msg):  # 联网搜索
         return "联网搜索服务维护中，请一段时间后再试"
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 def control_ha():  # Home Assistant控制
     try:
         client = hClient(f"{ha_api}/api/", ha_key)

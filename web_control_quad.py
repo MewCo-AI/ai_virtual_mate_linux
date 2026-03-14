@@ -209,7 +209,7 @@ quad_control_html = """
 </html>"""
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 @app4.route('/')
 def index():
     return render_template_string(quad_control_html)

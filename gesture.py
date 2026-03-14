@@ -62,7 +62,7 @@ def run_gesture():  # 手势控制
     cap.release()
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 def close_gesture():  # 关闭手势控制
     global run_ges
     run_ges = 0

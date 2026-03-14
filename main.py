@@ -47,7 +47,7 @@ def text_chat():  # 文本聊天线程
         chat_preprocess(msg)
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 def run_ase():  # 主动感知对话线程
     def ase_chat(msg):
         print(f"{mate_name}主动感知并发起了聊天")

@@ -167,7 +167,7 @@ def free_activity():  # 自由活动
     cap.release()
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 def auto_find_yolo_ugv(obj):  # 自动寻找指定物体
     global is_run_ugv
     is_run_ugv = 1

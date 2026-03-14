@@ -99,7 +99,7 @@ def dbfs(rms_value):  # 将均方根转换为分贝满量程（dBFS）
     return 20 * np.log10(rms_value / (2 ** 15))  # 16位音频
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 def record_audio():  # 录音
     frames = []
     recording = True

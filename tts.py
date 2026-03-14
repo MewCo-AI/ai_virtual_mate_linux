@@ -145,7 +145,7 @@ def play_tts(text):  # 语音合成
         print(f"语音合成服务出错：{str(e)}")
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 def tts_vits(text):
     global vits_tts
     if vits_tts is None:

@@ -59,7 +59,7 @@ def get_local_ip():  # 获取本机IP
 lan_ip = get_local_ip()
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 @app.route('/')
 def index():  # Live2D页面
     return render_template_string(live2d_web_template)

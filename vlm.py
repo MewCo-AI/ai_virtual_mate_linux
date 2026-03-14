@@ -70,7 +70,7 @@ def openai_vlm_cam(question):
     return completion.choices[0].message.content
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 def yolo_ocr_cam(question):  # 本地YOLO-OCR-LLM摄像头画面识别理解
     global cls_model, det_model, ocr
     if cls_model is None or det_model is None or ocr is None:

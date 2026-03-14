@@ -116,7 +116,7 @@
 #### 方法一(推荐)：自带模型的整合包
 
 1. 下载项目：
-从[项目官网](https://swordswind.github.io/2025/05/17/matelinux/)下载自带模型的整合包ai_virtual_mate_linux.zip并解压
+从[项目官网](https://mewco-ai.github.io/2025/05/17/matelinux/)下载自带模型的整合包ai_virtual_mate_linux.zip并解压
 ```bash
 cd ai_virtual_mate_linux
 ```
@@ -355,6 +355,5 @@ ai_virtual_mate_linux/
 
 如有任何问题或建议，请联系开发者团队：
 
-- **Email**: mewcoai@foxmail.com
-
+- **Email**: mewco-ai@foxmail.com
 - **GitHub**: [MewCo-AI](https://github.com/MewCo-AI)

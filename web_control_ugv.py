@@ -214,7 +214,7 @@ html_template = """
 </html>"""
 
 
-# open_source_project_address:https://github.com/swordswind/ai_virtual_mate_linux
+# open_source_project_address:https://github.com/MewCo-AI/ai_virtual_mate_linux
 @app2.route('/')
 def index():
     return render_template_string(html_template, move_gear=current_move_gear, rotate_gear=current_rotate_gear)
