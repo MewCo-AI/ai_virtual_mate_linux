@@ -355,5 +355,5 @@ ai_virtual_mate_linux/
 
 如有任何问题或建议，请联系开发者团队：
 
-- **Email**: mewco-ai@foxmail.com
+- **Email**: mewcoai@foxmail.com
 - **GitHub**: [MewCo-AI](https://github.com/MewCo-AI)
